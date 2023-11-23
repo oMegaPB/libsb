@@ -50,7 +50,7 @@ def clear_text(text: str) -> str:
     return COLOR_PATTERN.sub("", text)
             
 def get_date(ts: int) -> datetime.datetime:
-    return datetime.datetime.fromtimestamp(int(str(ts)[:10]))
+    return datetime.datetime.fromtimestamp(ts / 1000)
 
 @dataclass
 class CatacombsLevelInfo:
