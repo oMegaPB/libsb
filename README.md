@@ -1,3 +1,2 @@
 # libsb
-skyblock related python library
-(pls accept my app hypixel)
+skyblock related python library including image lore rendering (WIP)
