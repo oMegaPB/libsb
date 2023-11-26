@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import nbt.nbt as nbt
 
 T = t.TypeVar("T")
+P = t.ParamSpec("P")
 
 from .enums import *
 from .errors import *
@@ -100,16 +101,6 @@ def get_pet_level(name: str) -> int:
         return int(ret.groups()[0])
     return -1
 
-class cached_property:
-    def __init__(self, func) -> None:
-        self.func: t.Callable[[t.Any], t.Any] = func
-        self.value = None
-    
-    def __get__(self, instance: t.Any, type: t.Type[t.Any]) -> t.Any:
-        if not hasattr(instance, f"__{self.func.__name__}"):
-            setattr(instance, f"__{self.func.__name__}", self.func(instance))
-        return getattr(instance, f"__{self.func.__name__}")
-
 def get_rank(data: xJsonT) -> str:
     if 'monthlyPackageRank' in data['player'] and data['player']['monthlyPackageRank'] != 'NONE':
         rank = 'MVP++'
@@ -140,5 +131,6 @@ def get_rank(data: xJsonT) -> str:
 
 def as_chunks(iterable: t.List[T], n: int) -> t.List[t.List[T]]:
     return [iterable[x:x+n] for x in range(0, len(iterable), n)]
+
 
 

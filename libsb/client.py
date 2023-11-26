@@ -111,7 +111,7 @@ class ApiClient(ClientBase):
         data = (await self.api_request("/skyblock/auction", player=player, profile=profile)).json()
         return [self._dict_to_auction(x) for x in data["auctions"] if not x["claimed"]]
     
-    async def cata_stats(self, ign: str, profile: t.Optional[str] = None) -> tuple[str, str, xJsonT]:
+    async def cata_stats(self, ign: str, profile: t.Optional[str] = None) -> CatacombsStats:
         uuid = await self.name_to_uuid(ign)
         profiles, player = await asyncio.gather(
             self.api_request("/skyblock/profiles", uuid=uuid, profile=profile), 
@@ -128,8 +128,12 @@ class ApiClient(ClientBase):
                         ret.setdefault(y, {})[z] = dungeons[y][z]
                 ret["player_classes"] = x["members"][uuid]["dungeons"]["player_classes"]
                 ret["selected_dungeon_class"] = x["members"][uuid]["dungeons"]["selected_dungeon_class"]
-                return utils.get_rank(playerdata), playerdata["player"]["displayname"], {**ret, "secrets": secrets}
-        raise UnknownError()
+                return CatacombsStats(
+                    rank=utils.get_rank(playerdata), 
+                    name=playerdata["player"]["displayname"], 
+                    **{**ret, "secrets": secrets}
+                )
+        raise UnknownError("No profile selected or no profiles?")
 
     async def name_to_uuid(self, name: str) -> str:
         if name in self._uuid_cache.values():

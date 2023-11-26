@@ -2,6 +2,7 @@ import datetime
 import json
 import typing as t
 from dataclasses import dataclass
+from functools import cached_property
 
 from PIL import Image
 
@@ -21,7 +22,8 @@ __all__ = [
     "Gemstone",
     "PartialPlayer",
     "Enchantment",
-    "Item"
+    "Item",
+    "CatacombsStats",
 ]
 
 @dataclass
@@ -61,6 +63,9 @@ class AuctionBid:
     amount: int
     bid_at: datetime.datetime
 
+    def __repr__(self) -> str:
+        return f"<AuctionBid auction={self.auction_id}, amount={self.amount}, bidder={self.bidder}>"
+
 @dataclass
 class Item:
     name: str
@@ -83,7 +88,7 @@ class Item:
             return "<Item Empty>"
         return f"<Item {self.name} x{self.count}>"
         
-    @utils.cached_property
+    @cached_property
     def pet_level(self) -> int:
         if self.is_pet():
             return utils.get_pet_level(self.name)
@@ -93,7 +98,7 @@ class Item:
     def lore_with_name(self) -> str:
         return self.parsed_item_bytes["tag"]["display"]["Name"] + "\n" + self.parsed_item_bytes["tag"]["display"]["Lore"]
 
-    @utils.cached_property
+    @cached_property
     def item_image(self) -> Image.Image:
         return LoreWriter(self.lore_with_name).get_image()
     
@@ -104,7 +109,7 @@ class Item:
     def is_pet(self) -> bool:
         return bool(self.parsed_item_bytes["tag"]["ExtraAttributes"].get("petInfo", False))
 
-    @utils.cached_property
+    @cached_property
     def pet_exp(self) -> float | None:
         if self.is_pet():
             info = self.parsed_item_bytes["tag"]["ExtraAttributes"]["petInfo"]
@@ -112,7 +117,7 @@ class Item:
             return utils.CuteInt(round(exp, 3))
         raise IsNotAPet()
 
-    @utils.cached_property
+    @cached_property
     def enchantments(self) -> t.List["Enchantment"]:
         info = self.parsed_item_bytes["tag"]["ExtraAttributes"]["enchantments"]
         return [Enchantment(type=EnchantmentType.parse(k), tier=v) for k, v in info.items()]
@@ -165,11 +170,10 @@ class Gemstone:
 
 @dataclass
 class GemstoneSlot:
-    gemstone: Gemstone
-    is_empty: bool = False
+    gemstone: t.Optional[Gemstone]
 
     def __repr__(self) -> str:
-        if self.is_empty:
+        if self.gemstone is None:
             return f"<GemstoneSlot Empty>"
         elif self.is_closed:
             return f"<GemstoneSlot Closed>"
@@ -177,13 +181,13 @@ class GemstoneSlot:
     
     @classmethod
     def empty(cls):
-        return cls(Gemstone(GemstoneQuality.Unknown, GemstoneType.Unknown), True)
+        return cls(None)
     
     @property
     def is_closed(self) -> bool:
-        return self.gemstone.quality is GemstoneQuality.Unknown \
-            and self.gemstone.type is GemstoneType.Unknown \
-            and not self.is_empty
+        return self.gemstone is not None \
+            and self.gemstone.quality is GemstoneQuality.Unknown \
+            and self.gemstone.type is GemstoneType.Unknown
 
 @dataclass
 class PartialPlayer:
@@ -196,3 +200,14 @@ class PartialPlayer:
 class Enchantment:
     type: EnchantmentType
     tier: int
+
+@dataclass
+class CatacombsStats:
+    name: str
+    rank: str
+    experience: float
+    catacombs: t.Dict[str, t.Dict[str, float]]
+    master_catacombs: t.Dict[str, t.Dict[str, float]]
+    player_classes: t.Dict[str, t.Dict[str, float]]
+    selected_dungeon_class: str
+    secrets: int

@@ -102,30 +102,25 @@ async def cata_stats(): # catacombs check for user
     name = sys.argv[1]
     async with ApiClient(APIKEY) as client:
         ret = "=============================================\n"
-        rank, ign, stats = await client.cata_stats(name)
-        info = utils.get_catacombs_level(stats["experience"])
-        total_runs = sum(sum(stats.get(x, {}).get("tier_completions", {}).values()) for x in ["catacombs", "master_catacombs"])
-        ret += f"{rank} {ign} ||cata {info.current_level}|| {info.percent_to_new_level}% to {info.current_level+1}\n"
-        ret += "Selected Class: " + stats["selected_dungeon_class"].capitalize() + "\n"
-        for k, v in stats["player_classes"].items():
+        stats = await client.cata_stats(name)
+        info = utils.get_catacombs_level(stats.experience)
+        total_runs = sum(sum(getattr(stats, x, {}).get("tier_completions", {}).values()) for x in ["catacombs", "master_catacombs"])
+        ret += f"{stats.rank} {stats.name} ||cata {info.current_level}|| {info.percent_to_new_level}% to {info.current_level+1}\n"
+        ret += "Selected Class: " + stats.selected_dungeon_class.capitalize() + "\n"
+        for k, v in stats.player_classes.items():
             level = utils.get_catacombs_level(v['experience']).current_level
             ret += f"{k} {level} | "
         ret = ret [:-2] + "\n"
-        ret += f"Secrets Found: {utils.CuteInt(stats['secrets'])} ({round(stats['secrets']/total_runs, 2)} per run)\n\nFastest Time: S+\n"
+        ret += f"Secrets Found: {utils.CuteInt(stats.secrets)} ({round(stats.secrets / total_runs, 2)} per run)\n\nFastest Time: S+\n"
         for x in ["catacombs", "master_catacombs"]:
-            for y in range(5, 8):
-                minutes, seconds = divmod(datetime.timedelta(microseconds=stats.get(x, {}).get("fastest_time_s_plus", {}).get(str(y), 0) * 1000).seconds, 60)
+            for y in map(str, range(5, 8)):
+                minutes, seconds = divmod(datetime.timedelta(microseconds=getattr(stats, x, {}).get("fastest_time_s_plus", {}).get(y, 0) * 1000).seconds, 60)
                 seconds = "%.2d" % seconds
                 ret += f"{x.capitalize()} floor {y}: {minutes}:{seconds}\n"
             ret += "\n"
         ret = ret[:-1] + "============================================="
         print(ret)
 
-async def main():
-    async with ApiClient(APIKEY) as client:
-        for x in await client.fetch_inventory("deathstreeks"):
-            print(x)
-
 if __name__ == "__main__":
     with asyncio.Runner() as runner:
-        runner.run(main())
+        runner.run(cata_stats())
